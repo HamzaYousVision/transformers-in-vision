@@ -17,6 +17,7 @@ class ModelStructure:
     def show_model_layers(self):
         # TODO : make recurssive
         # level 1
+        print("\n ========================================== ")
         for name, layer in self.model.named_children():
             print(name, type(layer))
             layer_type = self.classify_layer(layer)
@@ -37,3 +38,8 @@ class ModelStructure:
                                 # level 4
                                 for name_subsubblock, layer_subsubblock in layer_subblock.named_children():
                                     print(".........", name_subsubblock, type(layer_subsubblock)) 
+
+
+def show_model_structure(model): 
+    model_structure = ModelStructure(model) 
+    model_structure.show_model_layers()
