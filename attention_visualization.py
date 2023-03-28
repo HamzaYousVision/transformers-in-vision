@@ -2,11 +2,8 @@ import os
 import cv2
 import torch
 import numpy as np
-
-import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
-
 from vision_transformer import VisionTransformer
 
 
@@ -34,7 +31,7 @@ class AttentionVisualization:
             ]
         )
 
-    def get_attention_map(self, img, get_mask=False):
+    def get_attention_map(self, img):
         x = self.transform(img)
         _, att_mat = self.model(x.unsqueeze(0))
 
@@ -52,24 +49,14 @@ class AttentionVisualization:
         # Recursively multiply the weight matrices
         joint_attentions = torch.zeros(aug_att_mat.size())
         joint_attentions[0] = aug_att_mat[0]
-
         for n in range(1, aug_att_mat.size(0)):
             joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
 
         v = joint_attentions[-1]
         grid_size = int(np.sqrt(aug_att_mat.size(-1)))
         mask = v[0, 1:].reshape(grid_size, grid_size).detach().numpy()
-        if get_mask:
-            result = cv2.resize(mask / mask.max(), img.size)
-        else:
-            mask = cv2.resize(mask / mask.max(), img.size)[..., np.newaxis]
-            result = (mask * img).astype("uint8")
+        mask = cv2.resize(mask / mask.max(), img.size)[..., np.newaxis]
+        result = (mask * img).astype("uint8")
 
         return result
 
-    def plot_attention_map(original_img, att_map):
-        _, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 16))
-        ax1.set_title("Original")
-        ax2.set_title("Attention Map Last Layer")
-        _ = ax1.imshow(original_img)
-        _ = ax2.imshow(att_map)
