@@ -1,5 +1,4 @@
 import argparse
-from matplotlib import pyplot as plt
 
 from torchvision.models import vit_b_16, resnet50, swin_b
 from feature_extraction import FeatureExtractor
@@ -20,7 +19,7 @@ def main(args):
     if args.structure:
         show_model_structure(model)
     if args.attention:
-        attention_visualization = AttentionVisualization(model)
+        attention_visualization = AttentionVisualization()
         attention_visualization.visualize()
     if args.features:
         features_extractor = FeatureExtractor(model)

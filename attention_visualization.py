@@ -1,39 +1,42 @@
 import os
 import cv2
-import torch 
+import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 
-from torchvision.models.vision_transformer import VisionTransformer
+from vision_transformer import VisionTransformer
 
-class AttentionVisualization: 
-    def __init__(self, model):
+
+class AttentionVisualization:
+    def __init__(self):
         self.image = Image.open(os.path.join("data", "sample_input.jpg"))
-        self.model = model
-        self.model = VisionTransformer
-        self.input_size = (224, 224)
+        self.model = VisionTransformer.from_name("ViT-B_16", num_classes=5)
+        self.input_size = (384, 384)
         self.set_transform()
 
-    def visualize(self): 
-        self.get_attention_map(self.image) 
+    def visualize(self):
+        map = self.get_attention_map(self.image)
+        cv2.imshow("map", map)
+        cv2.waitKey()
 
-    def set_transform(self): 
-        self.transform = transforms.Compose([
-            transforms.Resize(self.input_size),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ),
-])
+    def set_transform(self):
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize(self.input_size),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ]
+        )
 
     def get_attention_map(self, img, get_mask=False):
         x = self.transform(img)
-
-        logits, att_mat = self.model(x.unsqueeze(0))
+        _, att_mat = self.model(x.unsqueeze(0))
 
         att_mat = torch.stack(att_mat).squeeze(1)
 
@@ -51,22 +54,22 @@ class AttentionVisualization:
         joint_attentions[0] = aug_att_mat[0]
 
         for n in range(1, aug_att_mat.size(0)):
-            joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n-1])
+            joint_attentions[n] = torch.matmul(aug_att_mat[n], joint_attentions[n - 1])
 
         v = joint_attentions[-1]
         grid_size = int(np.sqrt(aug_att_mat.size(-1)))
         mask = v[0, 1:].reshape(grid_size, grid_size).detach().numpy()
         if get_mask:
             result = cv2.resize(mask / mask.max(), img.size)
-        else:        
+        else:
             mask = cv2.resize(mask / mask.max(), img.size)[..., np.newaxis]
             result = (mask * img).astype("uint8")
-        
+
         return result
 
     def plot_attention_map(original_img, att_map):
-        fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 16))
-        ax1.set_title('Original')
-        ax2.set_title('Attention Map Last Layer')
+        _, (ax1, ax2) = plt.subplots(ncols=2, figsize=(16, 16))
+        ax1.set_title("Original")
+        ax2.set_title("Attention Map Last Layer")
         _ = ax1.imshow(original_img)
         _ = ax2.imshow(att_map)
