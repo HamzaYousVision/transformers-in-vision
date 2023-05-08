@@ -4,6 +4,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
 
+from models import UNet
+
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,44 +34,6 @@ class Dataset:
         plt.show()
 
 
-class UNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=1):
-        super().__init__()
-        self.down_layers = torch.nn.ModuleList(
-            [
-                nn.Conv2d(in_channels, 32, kernel_size=5, padding=2),
-                nn.Conv2d(32, 64, kernel_size=5, padding=2),
-                nn.Conv2d(64, 64, kernel_size=5, padding=2),
-            ]
-        )
-        self.up_layers = torch.nn.ModuleList(
-            [
-                nn.Conv2d(64, 64, kernel_size=5, padding=2),
-                nn.Conv2d(64, 32, kernel_size=5, padding=2),
-                nn.Conv2d(32, out_channels, kernel_size=5, padding=2),
-            ]
-        )
-        self.act = nn.SiLU()
-        self.downscale = nn.MaxPool2d(2)
-        self.upscale = nn.Upsample(scale_factor=2)
-
-    def forward(self, x):
-        h = []
-        for i, l in enumerate(self.down_layers):
-            x = self.act(l(x))
-            if i < 2:
-                h.append(x)
-                x = self.downscale(x)
-
-        for i, l in enumerate(self.up_layers):
-            if i > 0:
-                x = self.upscale(x)
-                x += h.pop()
-            x = self.act(l(x))
-
-        return x
-
-
 class CustomDiffuser:
     def __init__(self):
         self.image_size = 32
@@ -87,8 +51,8 @@ class CustomDiffuser:
         axs[0].set_title("Input data")
         axs[0].imshow(torchvision.utils.make_grid(x)[0], cmap="Greys")
 
-        amount = torch.linspace(0, 1, x.shape[0])
-        noised_x = self.noise_scheduler.add_noise(x, amount)
+        noise = torch.rand_like(x)
+        noised_x = self.noise_scheduler.add_noise(x, noise)
         axs[1].set_title("Corrupted data (-- amount increases -->)")
         axs[1].imshow(torchvision.utils.make_grid(noised_x)[0], cmap="Greys")
         plt.show()
@@ -105,8 +69,8 @@ class NoiseScheduler:
     def __init__(self):
         pass
 
-    def add_noise(self, x, noise, amount):
-        amount = torch.rand_like(x) # TODO this is called beta
+    def add_noise(self, x, noise):
+        amount = torch.linspace(0, 1, x.shape[0]) # TODO this is called beta
         amount = amount.view(-1, 1, 1, 1)
         return x * (1 - amount) + noise * amount
 
@@ -170,8 +134,8 @@ class Trainer:
 def run_testing(dataset, diffuser):
     x, _ = next(iter(dataset.train_dataloader))
     x = x[:8]
-    amount = torch.linspace(0, 1, x.shape[0])
-    noised_x = diffuser.noise_scheduler.add_noise(x, amount)
+    noise = torch.rand_like(x)
+    noised_x = diffuser.noise_scheduler.add_noise(x, noise)
 
     with torch.no_grad():
         preds = diffuser.model(noised_x.to(DEVICE)).detach().cpu()
@@ -189,18 +153,18 @@ def run_testing(dataset, diffuser):
 def main():
     dataset = Dataset()
     dataset.create_training_loader()
-    dataset.show_sample_data()
+    # dataset.show_sample_data()
 
     diffuser = CustomDiffuser()
     diffuser.define_scheduler()
     diffuser.define_model()
-    diffuser.show_sample_diffuser(dataset)
-    diffuser.show_model_info()
+    # diffuser.show_sample_diffuser(dataset)
+    # diffuser.show_model_info()
 
     trainer = Trainer(dataset, diffuser)
     trainer.run_training()
 
-    run_testing(dataset, diffuser)
+    # run_testing(dataset, diffuser)
 
 
 if __name__ == "__main__":
