@@ -2,7 +2,6 @@ import torch
 import torchvision
 from torch import nn
 from torch.utils.data import DataLoader
-
 from matplotlib import pyplot as plt
 
 
@@ -106,8 +105,8 @@ class NoiseScheduler:
     def __init__(self):
         pass
 
-    def add_noise(self, x, amount):
-        noise = torch.rand_like(x)
+    def add_noise(self, x, noise, amount):
+        amount = torch.rand_like(x) # TODO this is called beta
         amount = amount.view(-1, 1, 1, 1)
         return x * (1 - amount) + noise * amount
 
@@ -128,7 +127,7 @@ class Trainer:
         return x.to(DEVICE)
 
     def sample_noise(self, x):
-        return torch.rand(x.shape[0]).to(DEVICE)
+        return torch.rand_like(x)
 
     def sample_timestep(self, clean_images):
         return torch.randint(
