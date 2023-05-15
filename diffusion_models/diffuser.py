@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from torchvision.utils import make_grid
 
-from models import SimpleUnet
+from models import SimpleUnet, UNet
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,7 +44,7 @@ class SimplifiedNoiseScheduler(NoiseScheduler):
         return x * (1 - amount) + noise * amount
 
     
-class CustomDiffuser:
+class Diffuser:
     def __init__(self):
         pass
 
@@ -88,3 +88,15 @@ class CustomDiffuser:
         print(
             "Number of parameters : ", sum([p.numel() for p in self.model.parameters()])
         )
+
+
+class SimplifiedDiffuser(Diffuser): 
+    def __init__(self):
+        super().__init__()
+
+    
+    def define_scheduler(self):
+        self.noise_scheduler = SimplifiedNoiseScheduler()
+
+    def define_model(self):
+        self.model = UNet().to(DEVICE)
