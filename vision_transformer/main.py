@@ -26,7 +26,7 @@ def main(args):
         features_extractor.set_input_image()
         features_extractor.extract_features()
         features_extractor.show_info()
-        features_extractor.visualize_features(10)
+        features_extractor.visualize_features(12)
 
 
 if __name__ == "__main__":

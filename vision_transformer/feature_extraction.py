@@ -51,7 +51,7 @@ class FeatureExtractor:
     def visualize_features(self, features_index):
         slected_layer = list(self.features)[features_index]
         selected_feature = self.features[slected_layer]
-
+        
         if len(selected_feature.shape) == 4:
             channel_indexes = random.sample(range(selected_feature.shape[-1]), 50)
             for channel_index in channel_indexes:
